@@ -1,6 +1,6 @@
 options
 {
-  static = true;
+  static = false;
   JAVA_UNICODE_ESCAPE = true;
 }
 

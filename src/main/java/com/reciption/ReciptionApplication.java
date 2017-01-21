@@ -22,7 +22,7 @@ public class ReciptionApplication {
 	private static int elementcount = 0;
 
 	public static void main(String[] args) throws IOException, ParseException {
-		IndentedStringBuilder builder = new IndentedStringBuilder(new StringBuilder());
+		IndentedStringBuilder builder = new IndentedStringBuilder(new StringBuilder(), "    ");
 
 		Pattern pattern = Pattern.compile("Valmistusaineet");
 		SpringApplication.run(ReciptionApplication.class, args);
@@ -49,24 +49,23 @@ public class ReciptionApplication {
 		if (shouldSkipNode(node)) {
 			return builder;
 		}
+
+		if (isListNode) {
+			builder.append("\"LIST_BEGIN: (" + ((Element)node).tagName() + " - " + node.attr("class") + ")\"\n");
+			builder.setIndent(++indent);
+		}
 		identifyAndQuoteTextElement(node, builder);
 		identifyAndTokenizeImage(node, builder);
-		if (identifyAndTokenizeHeading(node, builder)) {
-			return builder;
-		};
+		identifyAndTokenizeHeading(node, builder);
 		
-		if (isListNode) {
-			builder.setIndent(++indent);
-			builder.append("\"LIST_BEGIN: (" + ((Element)node).tagName() + " - " + node.attr("class") + ")\"\n");
-		}
 		if (node.childNodes().size() > 0) {
 			for (Node e : node.childNodes()) {
 				preTokenizeElementTree(e, builder, indent);
 			}
 		}
 		if (isListNode) {
-			builder.append("\"LIST_END: (" + ((Element)node).tagName() + " - " + node.attr("class") + ")\"\n");
 			builder.setIndent(--indent);
+			builder.append("\"LIST_END: (" + ((Element)node).tagName() + " - " + node.attr("class") + ")\"\n");
 		}
 		return builder;
 	}
