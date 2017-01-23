@@ -25,13 +25,20 @@ SKIP :
 | "\n"
 }
 
-TOKEN :
+MORE :
 {
-  < INGREDIENT_HEADING : "\"Ainekset\"" >
+  < INGREDIENT_HEADING : "\"Ainekset\"" > : IN_INGREDIENTLIST
 }
 
+< IN_INGREDIENTLIST >
+TOKEN :
+{
+  < LIST_BEGIN : "\"LIST_BEGIN\"" >
+| 
+  < LIST_END : "\"LIST_END\"" > : DEFAULT
+}
 
-
+< IN_INGREDIENTLIST >
 TOKEN :
 {
   < UNIT :
@@ -45,7 +52,7 @@ TOKEN :
   < #KG : "\"kg\"" >
 | 
   < #TEASPOON : "\"tl\"" >
-|    
+| 
   < #SPOON : "\"rkl\"" >
 | 
   < #DECILITER : "\"dl\"" >
@@ -55,12 +62,12 @@ TOKEN :
   < #LITER : "\"l\"" >
 }
 
-
+< IN_INGREDIENTLIST >
 TOKEN :
 {
-  < AMOUNT : "\"" ("n. ")* <INTEGER_LITERAL> "\"">
-|
-< AMOUNT_RANGE : "\"" < INTEGER_LITERAL > "-" <INTEGER_LITERAL> "\"">
+  < AMOUNT : "\"" ("n. ")* < INTEGER_LITERAL > "\"" >
+| 
+  < AMOUNT_RANGE : "\"" < INTEGER_LITERAL > "-" < INTEGER_LITERAL > "\"" >
 }
 
 TOKEN :
@@ -98,17 +105,31 @@ TOKEN :
   >
 }
 
-
 void recipe() :
 {
   Token s;
 }
 {
-  (< STRING_LITERAL >|< AMOUNT >)* s = < INGREDIENT_HEADING >
-  {
-    System.out.println("Got INGREDIENT_HEADING = " + s);
-  }
+  LOOKAHEAD(3) (
+    < STRING_LITERAL >
+  | < AMOUNT >
+  | anyList()
+  )*
+| 
   ingredientList() < EOF >
+}
+
+void anyList() :
+{
+}
+{
+  < LIST_BEGIN >
+  (
+    < STRING_LITERAL >
+  | < AMOUNT >
+  | anyList()
+  )*
+  < LIST_END >
 }
 
 void ingredientList() :
@@ -119,15 +140,28 @@ void ingredientList() :
   Token amount = null;
 }
 {
+  < LIST_BEGIN >
+  {
+    System.out.println("Got LIST_BEGIN");
+  }
   (
-    LOOKAHEAD(2) s = < STRING_LITERAL >
+    LOOKAHEAD(2)
+    ingredient = < STRING_LITERAL >
     {
-      System.out.println("Got STRING_LITERAL = " + s.image);
+      System.out.println("Got ingredient = " + ingredient.image);
     }
-  | 
-    (amount = < AMOUNT >| amount = < AMOUNT_RANGE >)* (unit = < UNIT >)* ingredient = < STRING_LITERAL >
+  |
+    (
+      amount = < AMOUNT >
+    | amount = < AMOUNT_RANGE >
+    )*
+    (unit = < UNIT >)* ingredient = < STRING_LITERAL >
     {
       System.out.println("Got amount = " + amount.image + " - unit = " + unit.image + " - ingredient = " + ingredient.image);
     }
   )+
+  < LIST_END >
+  {
+    System.out.println("Got LIST_END");
+  }
 }
